@@ -16,13 +16,13 @@ class TimelineItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 80, child: Text(time, textAlign: TextAlign.right)),
-        const SizedBox(width: 16),
         Column(
           children: [
+            SizedBox(height: 4),
             Container(
               width: 12,
               height: 12,
@@ -31,21 +31,17 @@ class TimelineItem extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            if (!isLast) SizedBox(height: 50, child: DashedLine(height: 50)),
+            SizedBox(height: 4),
+            if (!isLast) SizedBox(height: 100, child: DashedLine(height: 100)),
           ],
         ),
-        const SizedBox(width: 16),
-        Padding(
-          padding: EdgeInsetsGeometry.directional(
-            start: 0,
-            end: 0,
-            top: 25,
-            bottom: 0,
-          ),
-          child: SizedBox(
-            width: 80,
-            child: Text(label, textAlign: TextAlign.left),
-          ),
+        SizedBox(width: 8),
+        Column(
+          children: [
+            SizedBox(width: 80, child: Text(time, textAlign: TextAlign.left, style: TextStyle(color: Colors.blue),)),
+            SizedBox(height: 40),
+            SizedBox(width: 80, child: Text(label, textAlign: TextAlign.left)),
+          ],
         ),
       ],
     );

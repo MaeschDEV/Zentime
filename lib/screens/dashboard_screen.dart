@@ -150,14 +150,18 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Divider(),
-          SizedBox(
-            child: Column(
-              children: [
-                TimelineItem(time: '8:00 AM', label: 'Work'),
-                TimelineItem(time: '11:30 AM', label: 'Break'),
-                TimelineItem(time: '12:30 AM', label: 'Work'),
-                TimelineItem(time: '17:00 AM', label: '', isLast: true),
-              ],
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TimelineItem(time: '8:00 AM', label: 'Work'),
+                  TimelineItem(time: '11:30 AM', label: 'Break'),
+                  TimelineItem(time: '12:30 AM', label: 'Work'),
+                  TimelineItem(time: '12:30 AM', label: 'Work'),
+                  TimelineItem(time: '12:30 AM', label: 'Work'),
+                  TimelineItem(time: '17:00 AM', label: '', isLast: true),
+                ],
+              ),
             ),
           ),
         ],
