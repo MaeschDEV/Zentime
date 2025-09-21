@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:zentime/screens/dashboard_screen.dart';
-import 'package:zentime/screens/settings_screen.dart';
-import 'package:zentime/screens/statistics_screen.dart';
+import 'package:zentime/Screens/dashboard_screen.dart';
+import 'package:zentime/Screens/settings_screen.dart';
+import 'package:zentime/Screens/statistics_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
