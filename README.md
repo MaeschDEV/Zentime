@@ -120,8 +120,9 @@ Select a system where you want to run the app on, e.g.:
 
 ## Contributing
 
-Contributions are welcome!  
-1. Fork the repository  
-2. Create a new branch (`git checkout -b feature/your-feature`)  
-3. Commit your changes  
+Contributions are welcome!
+
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/your-feature`)
+3. Commit your changes
 4. Push to your fork and open a Pull Request
