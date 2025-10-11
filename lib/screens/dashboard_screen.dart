@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:zentime/DataTypes/day_entry.dart';
+import 'package:zentime/DataTypes/work_session.dart';
 import 'package:zentime/Widgets/timeline_item.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool checkedIn = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,10 +37,10 @@ class DashboardScreen extends StatelessWidget {
           SizedBox(
             width: 218,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: checkedIn ? onCheckOutClicked : onCheckInClicked,
               style: OutlinedButton.styleFrom(
                 backgroundColor: Colors.white,
-                side: BorderSide(color: Colors.green),
+                side: BorderSide(color: checkedIn ? Colors.red : Colors.green),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -42,12 +52,18 @@ class DashboardScreen extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.login, color: Colors.green),
+                children: [
+                  Icon(
+                    Icons.login,
+                    color: checkedIn ? Colors.red : Colors.green,
+                  ),
                   SizedBox(width: 8),
                   Text(
-                    'Check-In',
-                    style: TextStyle(color: Colors.green, fontSize: 16),
+                    checkedIn ? 'Checked-Out' : 'Check-In',
+                    style: TextStyle(
+                      color: checkedIn ? Colors.red : Colors.green,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -167,5 +183,41 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  onCheckInClicked() async {
+    print('Check-In clicked!');
+    setState(() {
+      checkedIn = !checkedIn;
+    });
+
+    String todayKey = DateTime.now().toIso8601String().split('T').first;
+
+    DayEntry today = DayEntry(
+      day: DateTime.now(),
+      workSessions: [WorkSession(start: DateTime.now(), end: DateTime.now())],
+      breakSessions: [],
+      sick: false,
+      holiday: false,
+    );
+
+    await Hive.box('days').put(todayKey, today.toJson());
+  }
+
+  onCheckOutClicked() async {
+    print('Check-Out clicked!');
+    setState(() {
+      checkedIn = !checkedIn;
+    });
+
+    String todayKey = DateTime.now().toIso8601String().split('T').first;
+
+    DayEntry today = DayEntry.fromJson(Hive.box('days').get(todayKey));
+    today.workSessions.last = WorkSession(
+      start: today.workSessions.last.start,
+      end: DateTime.now(),
+    );
+
+    await Hive.box('days').put(todayKey, today.toJson());
   }
 }
