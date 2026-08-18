@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:zentime/logic/settings.dart';
 import 'package:zentime/logic/week.dart';
 import 'package:zentime/logic/workday.dart';
+import 'package:zentime/tabs/settings_tab.dart';
+import 'package:zentime/tabs/overview_tab.dart';
 
 class DayTab extends StatefulWidget {
   const DayTab({super.key});
@@ -26,6 +28,144 @@ class _DayTab extends State<DayTab> {
   late String todayKey;
   late WorkDay? workDay;
   late bool workEnabled;
+
+  Future<void> calculateWorkTimes() async {
+    await _getBox();
+    final settingsBox = await Hive.openBox<Settings>('settingsBox');
+    Box<Settings> box = Hive.box<Settings>('settingsBox');
+    final settings = box.get('current') ?? Settings();
+
+    if (settingsBox.get('current')?.isCalculatedAutomatically ?? false) {
+      Map<String, dynamic> workedHoursMap = await getWeeklyWorkedHours();
+      final daysLeft = 7 - DateTime.now().weekday;
+      final workedHours = workedHoursMap['workedHoursDouble'];
+      final targetHours = workedHoursMap['targetHoursDouble'];
+
+      final hoursPerDay = (targetHours - workedHours) / daysLeft;
+
+      switch (DateTime.now().weekday) {
+        case DateTime.monday:
+          updateSettings(
+            box,
+            settings,
+            tuesdayWorkHours: settings.workingOnTuesday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            wednesdayWorkHours: settings.workingOnWednesday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            thursdayWorkHours: settings.workingOnThursday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            fridayWorkHours: settings.workingOnFriday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            saturdayWorkHours: settings.workingOnSaturday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            sundayWorkHours: settings.workingOnSunday ? hoursPerDay : 0,
+          );
+          break;
+        case DateTime.tuesday:
+          updateSettings(
+            box,
+            settings,
+            wednesdayWorkHours: settings.workingOnWednesday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            thursdayWorkHours: settings.workingOnThursday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            fridayWorkHours: settings.workingOnFriday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            saturdayWorkHours: settings.workingOnSaturday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            sundayWorkHours: settings.workingOnSunday ? hoursPerDay : 0,
+          );
+
+          print(settings.wednesdayWorkHours);
+          break;
+        case DateTime.wednesday:
+          updateSettings(
+            box,
+            settings,
+            thursdayWorkHours: settings.workingOnThursday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            fridayWorkHours: settings.workingOnFriday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            saturdayWorkHours: settings.workingOnSaturday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            sundayWorkHours: settings.workingOnSunday ? hoursPerDay : 0,
+          );
+          break;
+        case DateTime.thursday:
+          updateSettings(
+            box,
+            settings,
+            fridayWorkHours: settings.workingOnFriday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            saturdayWorkHours: settings.workingOnSaturday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            sundayWorkHours: settings.workingOnSunday ? hoursPerDay : 0,
+          );
+          break;
+        case DateTime.friday:
+          updateSettings(
+            box,
+            settings,
+            saturdayWorkHours: settings.workingOnSaturday ? hoursPerDay : 0,
+          );
+          updateSettings(
+            box,
+            settings,
+            sundayWorkHours: settings.workingOnSunday ? hoursPerDay : 0,
+          );
+          break;
+        case DateTime.saturday:
+          updateSettings(
+            box,
+            settings,
+            sundayWorkHours: settings.workingOnSunday ? hoursPerDay : 0,
+          );
+          break;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -238,7 +378,14 @@ class _DayTab extends State<DayTab> {
     final newWorkDay = WorkDay(
       date: now,
       dayType: DayType.work,
-      entries: [TimeEntry(type: EntryType.work, start: now, end: now)],
+      entries: [
+        TimeEntry(
+          type: EntryType.work,
+          start: now.subtract(Duration(hours: 8)),
+          end: now.subtract(Duration(hours: 1)),
+        ),
+        TimeEntry(type: EntryType.work, start: now, end: now),
+      ],
     );
 
     // Save the new WorkDay
@@ -284,6 +431,9 @@ class _DayTab extends State<DayTab> {
       breakEnabled = false;
       workEnabled = false;
     });
+
+    // Calculate the work times for the next days
+    calculateWorkTimes();
   }
 
   Future<void> _handleWork() async {

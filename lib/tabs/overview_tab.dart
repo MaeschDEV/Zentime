@@ -31,130 +31,10 @@ class _OverviewTab extends State<OverviewTab> {
     super.dispose();
   }
 
-  Future<Map<String, dynamic>> _getWeeklyWorkedHours() async {
-    final box = await Hive.openBox<WorkDay>('workdays');
-    final settingsBox = await Hive.openBox<Settings>('settingsBox');
-
-    final now = DateTime.now();
-    final daysFromMonday = now.weekday - 1;
-    final monday = now.subtract(Duration(days: daysFromMonday));
-
-    Duration totalWorkedDuration = Duration.zero;
-    double targetHours = settingsBox.get('current')?.weeklyWorkHours ?? 40.0;
-    List<Duration> dailyDurations = List.filled(7, Duration.zero);
-    List<String> dailyHours = List.filled(7, "");
-    List<DayType> dayTypes = List.filled(7, DayType.work);
-    List<double> dailyTargetHours = List.filled(7, 8.0);
-    List<String> dailyTargetHoursString = List.filled(7, "");
-
-    // Loop through each day of the week (Monday to Sunday)
-    for (int i = 0; i < 7; i++) {
-      final day = monday.add(Duration(days: i));
-      final dayKey = "${day.year}-${day.month}-${day.day}";
-      final workDay = box.get(dayKey);
-
-      if (workDay != null && workDay.dayType == DayType.work) {
-        for (final entry in workDay.entries) {
-          if (entry.type == EntryType.work) {
-            final start = entry.start;
-            var end = entry.end;
-            // If entry appears to be ongoing (end == start), treat end as now
-            if (end.isAtSameMomentAs(start)) {
-              end = DateTime.now();
-            }
-            final duration = end.difference(start);
-            totalWorkedDuration += duration;
-            dailyDurations[i] += duration;
-          }
-        }
-      }
-
-      dailyTargetHours[0] = settingsBox.get('current')?.mondayWorkHours ?? 8.0;
-      dailyTargetHours[1] = settingsBox.get('current')?.tuesdayWorkHours ?? 8.0;
-      dailyTargetHours[2] =
-          settingsBox.get('current')?.wednesdayWorkHours ?? 8.0;
-      dailyTargetHours[3] =
-          settingsBox.get('current')?.thursdayWorkHours ?? 8.0;
-      dailyTargetHours[4] = settingsBox.get('current')?.fridayWorkHours ?? 8.0;
-      dailyTargetHours[5] =
-          settingsBox.get('current')?.saturdayWorkHours ?? 0.0;
-      dailyTargetHours[6] = settingsBox.get('current')?.sundayWorkHours ?? 0.0;
-
-      switch (workDay?.dayType) {
-        case DayType.publicHoliday:
-          dayTypes[i] = DayType.publicHoliday;
-
-          targetHours -= dailyTargetHours[i];
-          break;
-        case DayType.holiday:
-          dayTypes[i] = DayType.holiday;
-          targetHours -= dailyTargetHours[i];
-          break;
-        case DayType.sick:
-          targetHours -= dailyTargetHours[i];
-          dayTypes[i] = DayType.sick;
-          break;
-        default:
-          dayTypes[i] = DayType.work;
-      }
-    }
-
-    // Worked Hours
-    final workedHours = _formatDurationHHmm(totalWorkedDuration);
-
-    // Target Hours
-    final targetHoursDuration = Duration(minutes: (targetHours * 60).round());
-    final targetHoursString = _formatDurationHHmm(targetHoursDuration);
-
-    // Progress
-    double progress = 0.0;
-    if (targetHours != 0) {
-      progress = (totalWorkedDuration.inMinutes / 60.0 / targetHours).clamp(
-        0.0,
-        1.0,
-      );
-    }
-
-    // Remaining Hours
-    final remainingHours =
-        (targetHoursDuration - totalWorkedDuration) < Duration.zero
-        ? Duration.zero
-        : targetHoursDuration - totalWorkedDuration;
-    final remainingHoursString = _formatDurationHHmm(remainingHours);
-
-    // Daily Hours
-    for (int i = 0; i < dailyDurations.length; i++) {
-      dailyHours[i] = _formatDurationHHmm(dailyDurations[i]);
-    }
-
-    // Daily target Hours
-    for (int i = 0; i < dailyTargetHours.length; i++) {
-      dailyTargetHoursString[i] = _formatDurationHHmm(
-        Duration(minutes: (dailyTargetHours[i] * 60).round()),
-      );
-    }
-
-    return {
-      'workedHours': workedHours,
-      'targetHours': targetHoursString,
-      'progress': progress,
-      'remainingHours': remainingHoursString,
-      'dailyHours': dailyHours,
-      'dailyTargetHours': dailyTargetHoursString,
-      'dayTypes': dayTypes,
-    };
-  }
-
-  String _formatDurationHHmm(Duration d) {
-    final h = d.inHours.toString().padLeft(2, '0');
-    final m = (d.inMinutes.remainder(60)).toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final weeklyFuture = _getWeeklyWorkedHours();
+    final weeklyFuture = getWeeklyWorkedHours();
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -993,4 +873,123 @@ class _OverviewTab extends State<OverviewTab> {
       ),
     );
   }
+}
+
+Future<Map<String, dynamic>> getWeeklyWorkedHours() async {
+  final box = await Hive.openBox<WorkDay>('workdays');
+  final settingsBox = await Hive.openBox<Settings>('settingsBox');
+
+  final now = DateTime.now();
+  final daysFromMonday = now.weekday - 1;
+  final monday = now.subtract(Duration(days: daysFromMonday));
+
+  Duration totalWorkedDuration = Duration.zero;
+  double targetHours = settingsBox.get('current')?.weeklyWorkHours ?? 40.0;
+  List<Duration> dailyDurations = List.filled(7, Duration.zero);
+  List<String> dailyHours = List.filled(7, "");
+  List<DayType> dayTypes = List.filled(7, DayType.work);
+  List<double> dailyTargetHours = List.filled(7, 8.0);
+  List<String> dailyTargetHoursString = List.filled(7, "");
+
+  // Loop through each day of the week (Monday to Sunday)
+  for (int i = 0; i < 7; i++) {
+    final day = monday.add(Duration(days: i));
+    final dayKey = "${day.year}-${day.month}-${day.day}";
+    final workDay = box.get(dayKey);
+
+    if (workDay != null && workDay.dayType == DayType.work) {
+      for (final entry in workDay.entries) {
+        if (entry.type == EntryType.work) {
+          final start = entry.start;
+          var end = entry.end;
+          // If entry appears to be ongoing (end == start), treat end as now
+          if (end.isAtSameMomentAs(start)) {
+            end = DateTime.now();
+          }
+          final duration = end.difference(start);
+          totalWorkedDuration += duration;
+          dailyDurations[i] += duration;
+        }
+      }
+    }
+
+    dailyTargetHours[0] = settingsBox.get('current')?.mondayWorkHours ?? 8.0;
+    dailyTargetHours[1] = settingsBox.get('current')?.tuesdayWorkHours ?? 8.0;
+    dailyTargetHours[2] = settingsBox.get('current')?.wednesdayWorkHours ?? 8.0;
+    dailyTargetHours[3] = settingsBox.get('current')?.thursdayWorkHours ?? 8.0;
+    dailyTargetHours[4] = settingsBox.get('current')?.fridayWorkHours ?? 8.0;
+    dailyTargetHours[5] = settingsBox.get('current')?.saturdayWorkHours ?? 0.0;
+    dailyTargetHours[6] = settingsBox.get('current')?.sundayWorkHours ?? 0.0;
+
+    switch (workDay?.dayType) {
+      case DayType.publicHoliday:
+        dayTypes[i] = DayType.publicHoliday;
+
+        targetHours -= dailyTargetHours[i];
+        break;
+      case DayType.holiday:
+        dayTypes[i] = DayType.holiday;
+        targetHours -= dailyTargetHours[i];
+        break;
+      case DayType.sick:
+        targetHours -= dailyTargetHours[i];
+        dayTypes[i] = DayType.sick;
+        break;
+      default:
+        dayTypes[i] = DayType.work;
+    }
+  }
+
+  // Worked Hours
+  final workedHours = _formatDurationHHmm(totalWorkedDuration);
+
+  // Target Hours
+  final targetHoursDuration = Duration(minutes: (targetHours * 60).round());
+  final targetHoursString = _formatDurationHHmm(targetHoursDuration);
+
+  // Progress
+  double progress = 0.0;
+  if (targetHours != 0) {
+    progress = (totalWorkedDuration.inMinutes / 60.0 / targetHours).clamp(
+      0.0,
+      1.0,
+    );
+  }
+
+  // Remaining Hours
+  final remainingHours =
+      (targetHoursDuration - totalWorkedDuration) < Duration.zero
+      ? Duration.zero
+      : targetHoursDuration - totalWorkedDuration;
+  final remainingHoursString = _formatDurationHHmm(remainingHours);
+
+  // Daily Hours
+  for (int i = 0; i < dailyDurations.length; i++) {
+    dailyHours[i] = _formatDurationHHmm(dailyDurations[i]);
+  }
+
+  // Daily target Hours
+  for (int i = 0; i < dailyTargetHours.length; i++) {
+    dailyTargetHoursString[i] = _formatDurationHHmm(
+      Duration(minutes: (dailyTargetHours[i] * 60).round()),
+    );
+  }
+
+  return {
+    'workedHours': workedHours,
+    'targetHours': targetHoursString,
+    'progress': progress,
+    'remainingHours': remainingHoursString,
+    'dailyHours': dailyHours,
+    'dailyTargetHours': dailyTargetHoursString,
+    'dayTypes': dayTypes,
+    'workedHoursDouble': totalWorkedDuration.inMinutes / 60,
+    'targetHoursDouble': targetHoursDuration.inMinutes / 60,
+  };
+}
+
+String _formatDurationHHmm(Duration d) {
+  final h = d.inHours.toString().padLeft(2, '0');
+  final m = (d.inMinutes.remainder(60)).toString().padLeft(2, '0');
+  return '$h:$m';
 }
